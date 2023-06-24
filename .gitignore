@@ -1,5 +1,3 @@
-/dataset/*
-/experiments/*
 *__pycache*
 *.ipy*
 dlc_test.py
