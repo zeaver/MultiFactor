@@ -1,0 +1,16 @@
+/dataset/*
+/experiments/*
+*__pycache*
+*.ipy*
+dlc_test.py
+.vscode*
+*/\.idea/*
+test*/*
+src/skiqg_dev
+pre_process/generate_fa/pattern
+src/test
+demo
+evaluate
+tmp/*
+pre_process/*
+dlc_shell/*

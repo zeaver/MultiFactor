@@ -1,0 +1,7 @@
+torch==1.11.0+cu102
+transformers==4.20.1
+bert_score==0.3.10
+nltk==3.8.1
+rouge==1.0.1
+pycocoevalcap==1.2
+
