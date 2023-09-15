@@ -11,3 +11,4 @@ evaluate
 tmp/*
 pre_process/*
 dlc_shell/*
+*.DS_Store
