@@ -33,12 +33,10 @@ QUESTION_SEP = "<question>"
 FULL_ANS_SEP = "<fa>"
 CONTEXT_SEP = "<passage>"
 
-DATASET_PREFIX = Path(__file__).absolute().parent.parent / "dataset"
+DATASET_PREFIX = Path(__file__).absolute().parent.parent.parent / "dataset"
 
 QUESTION_PROMPT = "Ask a question: "
 FULL_ANS_PROMPT = "Full answer sentence: "
-
-MAX_LENGTH = 512
 
 DataInst = collections.namedtuple('DataInst', 'question answer context p_phrase n_phrase full_answer')
 logging.basicConfig(format='%(asctime)s %(levelname)s : %(message)s', level=logging.INFO)
@@ -165,7 +163,6 @@ class MyDataset(Dataset):
                 fa = [list(fa_i.values()) for fa_i in fa]
 
                 self.examples = []
-                pred_fa_examples = []
                 for i, sample in tqdm(enumerate(data)):
                     if split != "train":
                         fas = [fa[i][0]]
@@ -173,7 +170,7 @@ class MyDataset(Dataset):
                         fas = fa[i]
 
                     if self.data_format != "mix_full_answer":
-                        pred_fa_examples.append(DataInst(question=str(sample['question']),
+                        self.examples.append(DataInst(question=str(sample['question']),
                                                          answer=str(sample['answer']),
                                                          context=str(sample[INPUT_STRING]),
                                                          p_phrase=sample['p_phrase'],
@@ -182,14 +179,15 @@ class MyDataset(Dataset):
                                                 )
                     else:
                         for fa_j in fas:
-                            pred_fa_examples.append(DataInst(question=str(sample['question']),
+                            self.examples.append(DataInst(question=str(sample['question']),
                                                              answer=str(sample['answer']),
                                                              context=str(sample[INPUT_STRING]),
                                                              p_phrase=sample['p_phrase'],
                                                              n_phrase=sample['n_phrase'],
                                                              full_answer=[fa_j])
                                                     )
-            elif self.data_format in ["format_1", "format_2", "format_3", "q_model_upper", "pet", "pet_mixqg"]:
+                    
+            elif self.data_format in ["format_1", "format_2", "format_3", "q_model_upper", "pet", "pet_mixqg", "fa_model"]:
                 self.examples = []
                 for sample in tqdm(data):
                     self.examples.append(DataInst(question=str(sample['question']),
@@ -531,13 +529,17 @@ class MyDataset(Dataset):
         print(count)
         return check_flag_bool
 
-    def _after_process_flags(self, node_flags: List[NodeFlag], start_idx, input_ids, max_length=MAX_LENGTH) -> List[
+    def _after_process_flags(self, node_flags: List[NodeFlag], start_idx, input_ids, max_length=0) -> List[
         NodeFlag]:
         """
         1. remove flags that longer than MAX_LENGTH, so even the start idx is 0, we also need the after-process
         2. shift the flags, align with the passage start special token idx
         """
         new_nodes = []
+        if max_length > 0:
+            max_length = max_length
+        else:
+            max_length = self.max_input_length
 
         def check_ids(idx_range, raw_token_ids):
             for i, raw_token_id in zip(idx_range, raw_token_ids):
@@ -578,27 +580,29 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--data_name', type=str, default='cqg', help='choice the dataset')
-    parser.add_argument('-j', '--data_format', type=str, default='format_16_top1', help='choice the dataset format')
-    parser.add_argument('-l', '--max_length', type=int, default=512, help='max input length')
+    parser.add_argument('-j', '--data_format', type=str, default='multi_factor_mixqg', help='choice the dataset format')
+    parser.add_argument('-l', '--max_length', type=int, default=256, help='max input length')
     parser.add_argument('-p', '--dataset_prefix', type=str, default=str(DATASET_PREFIX), help='choice the dataset format')
-    MAX_LENGTH = args.max_length
     args, remaining_args = parser.parse_known_args()
+    MAX_LENGTH = args.max_length
     from transformers import T5Tokenizer, T5ForConditionalGeneration
-    tokenizer = T5Tokenizer.from_pretrained("t5-base", use_fast=False, model_max_length=MAX_LENGTH)
+    model_path = r"/home/student2020/zehua/huggingface_download/t5-base"
+    tokenizer = T5Tokenizer.from_pretrained(model_path, use_fast=False, model_max_length=MAX_LENGTH)
     tokenizer.add_tokens([ANS_SEP, KEYPHRASE_SEP, QUESTION_SEP, FULL_ANS_SEP, CONTEXT_SEP], special_tokens=True)
     data_name = args.data_name
     data_path_prefix = args.dataset_prefix
-    data_path = os.path.join(data_path_prefix, f"dataset/{data_name}")
-    splits = ["dev", "test", "train"]
+    data_path = os.path.join(data_path_prefix, f"{data_name}")
+    splits = ["dev", "test",]
+    # splits = ["train"]
 
     for split in splits:
-        dataset = MyDataset(data_path, split, args.data_format, tokenizer)
+        dataset = MyDataset(data_path, split, args.data_format, tokenizer, max_input_length=MAX_LENGTH)
         try:
             os.mkdir(os.path.join(data_path, f"{args.data_format}"))
         except:
             pass
         dataset.save_dataset(os.path.join(data_path, f"{args.data_format}/{split}.pt"))
-        check_save_path = os.path.join(data_path_prefix, f"experiments/cqg_{args.data_format}_{split}.jsonl")
+        check_save_path = os.path.join(data_path_prefix, f"{args.data_name}/{args.data_format}/check_{split}.jsonl")
         dataset.check_feature_flags(check_save_path)
         print(dataset[0])
         print(dataset.examples[0])

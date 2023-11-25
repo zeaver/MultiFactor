@@ -45,7 +45,7 @@ class MyTrainer:
 
     def __init__(self,
                  model: Union[PreTrainedModel, torch.nn.Module, BridgeT5] = None,
-                 tokenizer: Union[PreTrainedTokenizerBase] = None,
+                 tokenizer: Optional[PreTrainedTokenizerBase] = None,
                  dataset: Optional[Dataset] = None,
                  training_dir: Optional[str] = None,
                  training_args: Optional[TrainingArguments] = None,
@@ -156,7 +156,7 @@ class MyTrainer:
                 self.optimizer.step()
                 if self.scheduler is not None:
                     self.scheduler.step()
-            if epoch_id >= 1:
+            if epoch_id >= 0:
                 evaluate_data_result = evaluate_data(self.tokenizer, self.training_args, self.data_training_args,
                                                      self.dev_dataset, self.model, self.device,
                                                      save_evaluate_result=True,
@@ -177,14 +177,7 @@ class MyTrainer:
                     self.writer.add_scalar('metric_test/' + metric_k, metric_v, epoch_id)
                 self.writer.flush()
 
-                if test_data_result.bleu4 > best_bleu4:
-                    best_bleu4 = test_data_result.bleu4
-                    save_path = os.path.join(save_dir_epoch, f"model_{best_bleu4}")
-                    try:
-                        os.mkdir(save_path)
-                    except:
-                        pass
-                if self.training_args.save_model_pt and epoch_id >= 2:
+                if self.training_args.save_model_pt and epoch_id >= 0:
                     save_path = os.path.join(save_dir_epoch, f"model")
                     try:
                         os.mkdir(save_path)
@@ -320,7 +313,7 @@ def evaluate_data(evaluate_tokenizer: PreTrainedTokenizerBase = None,
                                 'generated ids': ' '.join(map(str, g_ids)), 'label ids': " ".join(map(str, l_ids)),
                                 'model_output': r, 'model_label': l,
                                 'pred': p, 'gold': g})
-        with open(save_dir + f"/evaluate_{evaluate_dataset.split}.jsonl", 'w') as f:
+        with open(save_dir + f"/evaluate_{evaluate_dataset.split}.json", 'w') as f:
             json.dump(info_list, f, indent=4)
     return result
 

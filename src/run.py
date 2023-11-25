@@ -32,14 +32,15 @@ MAX_LENGTH = 512
 CONFIG_PATH = Path(__file__).absolute().parent / "config.ini"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = "cpu"
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s   %(levelname)s   %(message)s')
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-j', '--job', type=str, default='pcqg', help='choice the dataset')
-    parser.add_argument('-f', '--data_format', type=str, default='format_16', help='choice the data format')
+    parser.add_argument('-j', '--job', type=str, default='cqg', help='choice the dataset')
+    parser.add_argument('-f', '--data_format', type=str, default='multi_factor', help='choice the data format')
     parser.add_argument('-c', '--config_file', type=str, default=str(CONFIG_PATH), help='configuration file')
     parser.add_argument('-g', '--gpu', type=int, default=0, help='which GPU to use for evaluation')
     parser.add_argument('-seed', '--seed', type=int, default=42, help='random seed num')
@@ -55,7 +56,7 @@ def main():
 
     # set defaults for other arguments
     defaults = {
-        "model_type": "ski",
+        "model_type": "multifactor",
         # T5Config
         "if_node_cls": True,
         "cls_loss_weight": 1,
@@ -68,8 +69,10 @@ def main():
         # data and training
         'if_load_data_cache': True,
         'learning_rate': 1e-4,
-        'train_subset': 1,
         "warmup_ratio": 0.1,
+        'train_subset': 1,
+        # debug
+        # 'train_subset': .001,
     }
 
     # the config file gives default values for the command line arguments
@@ -79,6 +82,14 @@ def main():
     second_parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments, MultiFactorConfig))
     second_parser.set_defaults(**defaults)
     model_args, data_args, training_args, multi_factor_args = second_parser.parse_args_into_dataclasses(remaining_args)
+    
+    # The training code not supports multi-gpu training.
+    # When running the code on multi-gpu machine, 
+    # the training batch_size will be n_gpu * per_device_train_batch_size
+    # So here we force the n_gpu as 1
+    # details are in: src/transformers/training_args.py, transformers 4.35.2, Line 1770
+    # or set visible cuda device number as 1
+    training_args._n_gpu = 1
 
     # check experiments args
     # init the model path or name, and some other kwargs
@@ -112,13 +123,13 @@ def main():
             config=config,
             cache_dir=model_args.cache_dir,
         ).to(device)
-    elif multi_factor_args.model_type in ["Ski", "FADecoder", "NodeCls"]:
+    elif multi_factor_args.model_type in ["MultiFactor", "FADecoder", "NodeCls"]:
         from MultiFactor.modeling_bridget5 import BridgeT5 as MyModel
         logging.info(f"Loading the model: BridgeT5")
         model = MyModel.from_pretrained(
             model_args.model_name_or_path,
             config=config,
-            ski_config=multi_factor_args,
+            multi_factor_config=multi_factor_args,
             cache_dir=model_args.cache_dir,
         ).to(device)
         # model._init_full_answer_decoder()
@@ -155,14 +166,19 @@ def main():
                                   dev_dataset, test_dataset, data_args)
         my_trainer.train(data_format=args.data_format)
     else:
-        test_dataset = MyDataset(test_data_json_file,
+        test_kwargs = {
+            "save_evaluate_result": True,
+            "save_dir": experiments_output_dir,
+            "data_format": args.data_format,
+        }
+        test_dataset = MyDataset(data_path, 'test', args.data_format,
                                  tokenizer,
                                  if_load_cache_pt=data_args.if_load_data_cache,
                                  train_subset=1)
-        test_result = evaluate_data(tokenizer, training_args, data_args, test_dataset, model, device)
+        test_result = evaluate_data(tokenizer, training_args, data_args, test_dataset, model, device, 
+                                    **test_kwargs)
 
-        print(test_result._asdict())
-    print("test")
+        # print(test_result._asdict())
 
 
 if __name__ == '__main__':
