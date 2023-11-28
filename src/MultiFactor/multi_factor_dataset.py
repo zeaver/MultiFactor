@@ -122,10 +122,11 @@ class MyDataset(Dataset):
             # set random seed for repeatability
             random.seed(seed)
         self.dataset_name = file_path.split("/")[-1]
-        if self.dataset_name.startswith("squad") or self.dataset_name.startswith("pcqg"):
-            INPUT_STRING = "context"
-        else:
+        
+        if self.dataset_name == "cqg":
             INPUT_STRING = "fact"
+        else:
+            INPUT_STRING = "context"
 
         self.data_args = data_args
         if data_args:
@@ -153,8 +154,7 @@ class MyDataset(Dataset):
             with open(json_file, 'r', encoding='utf-8') as read_file:
                 data = json.load(read_file)
 
-            if self.data_format in ["full_answer_concat",
-                                    "multi_factor", "top1_q_model",
+            if self.data_format in ["multi_factor", "top1_q_model",
                                     "multi_factor_mixqg", "top1_q_model_mixqg",
                                     "mix_full_answer"]:
                 fa_file = os.path.join(file_path, f"{self.data_format}/{split}.json")
@@ -334,7 +334,7 @@ class MyDataset(Dataset):
                     output_string = _full_answer
                 input_string = f"{ANS_SEP} {_answer} {CONTEXT_SEP} {context}"
 
-            elif self.data_format == "full_answer_concat":
+            elif self.data_format == "mix_full_answer":
                 fa_string = " ".join(_full_answer)
                 input_string = f"{ANS_SEP} {_answer} {FULL_ANS_SEP} {fa_string} {CONTEXT_SEP} {context}"
                 output_string = _question

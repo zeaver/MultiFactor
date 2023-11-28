@@ -1,4 +1,4 @@
-torch==1.11.0+cu102
+torch
 transformers==4.20.1
 bert_score==0.3.10
 nltk==3.8.1

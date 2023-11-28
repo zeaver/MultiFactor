@@ -44,7 +44,7 @@ def main():
     parser.add_argument('-c', '--config_file', type=str, default=str(CONFIG_PATH), help='configuration file')
     parser.add_argument('-g', '--gpu', type=int, default=0, help='which GPU to use for evaluation')
     parser.add_argument('-seed', '--seed', type=int, default=42, help='random seed num')
-    parser.add_argument('-m', '--mode', type=str, default="train", choices=['train', 'test'], help='train or test')
+    parser.add_argument('-m', '--mode', type=str, default="train", choices=['train', 'infer'], help='train or inference')
     args, remaining_args = parser.parse_known_args()
     set_seed(args.seed)
 
