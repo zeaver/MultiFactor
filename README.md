@@ -52,9 +52,9 @@ We provide four datasets mentioned in our paper huggingface dataset link:
 
 | dataset name              | dataset link                                                          |
 |---------------------------|-----------------------------------------------------------------------|
-| HotpotQA-Supporting Facts | https://huggingface.co/datasets/zeaver/multifactor_hotpotqa_suppfacts |
+| HotpotQA-Supporting Facts | [multifactor_hotpotqa_suppfacts](https://huggingface.co/datasets/zeaver/multifactor_hotpotqa_suppfacts) |
 | HotpotQA-Full Document    | coming soon                                                           |
-| SQuAD 1.1 - Zhou split    | https://huggingface.co/datasets/zeaver/multifactor_squad1.1_zhou      |
+| SQuAD 1.1 - Zhou split    | [multifactor_squad1.1_zhou](https://huggingface.co/datasets/zeaver/multifactor_squad1.1_zhou)      |
 | SQuAD 1.1 - Du split      | coming soon                                                           |
 
 When using your custom dataset, please make sure that `p/n_phrase` are in your `context`.
