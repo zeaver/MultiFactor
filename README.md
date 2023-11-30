@@ -48,7 +48,7 @@ Our implementation reads json files instead of jsonl. And the schema is:
 }
 ```
 
-We provide four datasets mentioned in our paper huggingface dataset link:
+We provide four datasets huggingface dataset link mentioned in our paper:
 
 | dataset name              | dataset link                                                          |
 |---------------------------|-----------------------------------------------------------------------|
